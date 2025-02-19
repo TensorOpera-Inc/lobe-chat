@@ -96,11 +96,11 @@ export class Ld {
         'We are a group of e/acc design-engineers, hoping to provide modern design components and tools for AIGC, and creating a technology-driven forum, fostering knowledge interaction and the exchange of ideas that may culminate in mutual inspiration and collaborative innovation.',
       'email': EMAIL_BUSINESS,
       'founders': [this.getAuthors(['arvinxx']), this.getAuthors(['canisminor'])],
-      'image': urlJoin(OFFICIAL_SITE, '/icon-512x512.png'),
+      'image': urlJoin(OFFICIAL_SITE, '/to-icon-512x512.png'),
       'logo': {
         '@type': 'ImageObject',
         'height': 512,
-        'url': urlJoin(OFFICIAL_SITE, '/icon-512x512.png'),
+        'url': urlJoin(OFFICIAL_SITE, '/to-icon-512x512.png'),
         'width': 512,
       },
       'name': 'LobeHub',
