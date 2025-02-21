@@ -14,7 +14,6 @@ pipeline {
     OPENAI_PROXY_URL = 'https://aihubmix.com/v1'
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_test_YnVzeS1tYXJ0aW4tODYuY2xlcmsuYWNjb3VudHMuZGV2JA'
     CLERK_SECRET_KEY = credentials('clerk-secret-key')
-    NEXT_PUBLIC_BASE_PATH = '/to-chat'
 
     GITHUB_CREDENTIAL_ID = 'github-id'
 
@@ -59,7 +58,6 @@ pipeline {
           --build-arg OPENAI_PROXY_URL=$OPENAI_PROXY_URL \
           --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY \
           --build-arg CLERK_SECRET_KEY=$CLERK_SECRET_KEY \
-          --build-arg NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH \
           -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION-SNAPSHOT-$BUILD_NUMBER .'
         }
       }
