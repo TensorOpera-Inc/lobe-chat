@@ -7,7 +7,9 @@ describe('debugStream', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    // @ts-expect-error
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    // @ts-expect-error
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 

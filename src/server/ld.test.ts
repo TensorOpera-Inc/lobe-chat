@@ -57,7 +57,7 @@ describe('Ld', () => {
       });
 
       expect(webpage['@type']).toBe('WebPage');
-      expect(webpage.name).toBe('Test Page · LobeChat');
+      expect(webpage.name).toBe('Test Page · TO Chat');
       expect(webpage.description).toBe('Test Description');
     });
   });
@@ -79,7 +79,7 @@ describe('Ld', () => {
       const website = ld.genWebSite();
 
       expect(website['@type']).toBe('WebSite');
-      expect(website.name).toBe('LobeChat');
+      expect(website.name).toBe('TO Chat');
     });
   });
 
@@ -95,7 +95,7 @@ describe('Ld', () => {
       });
 
       expect(article['@type']).toBe('Article');
-      expect(article.headline).toBe('Test Article · LobeChat');
+      expect(article.headline).toBe('Test Article · TO Chat');
       expect(article.author['@type']).toBe('Person');
     });
   });

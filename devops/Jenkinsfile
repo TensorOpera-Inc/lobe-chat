@@ -1,0 +1,106 @@
+pipeline {
+  agent {
+    kubernetes {
+      inheritFrom 'nodejs base'
+      containerTemplate {
+        name 'nodejs'
+        image 'node:20.12.2'
+      }
+    }
+  }
+
+  environment {
+    OPENAI_API_KEY = credentials('openai-api-key')
+    OPENAI_PROXY_URL = 'https://aihubmix.com/v1'
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_test_YnVzeS1tYXJ0aW4tODYuY2xlcmsuYWNjb3VudHMuZGV2JA'
+    CLERK_SECRET_KEY = credentials('clerk-secret-key')
+    NEXT_PUBLIC_BASE_PATH = '/to-chat'
+
+    GITHUB_CREDENTIAL_ID = 'github-id'
+
+    AWS_IAM_CREDENTIAL_ID_PRODUCTION = 'aws-ecr-sk-prod'
+    AWS_ECR_CREDENTIAL_ID_PRODUCTION = 'aws-ecr-ak-prod'
+    
+    PRODUCTION_KUBECONFIG_CREDENTIAL_ID = 'fedml-release-kubeconfig'
+
+    REGISTRY_PRODUCTION = '276355461497.dkr.ecr.us-west-1.amazonaws.com'
+    DEPLOY_NAMESPACE_PRODUCTION = 'fedml-mlops'
+    VERSION_PRODUCTION = 'latest'
+    BRANCH_PRODUCTION = 'main'
+
+    DOCKER_NAMESPACE = ''
+    APP_NAME = 'tensoropera-chat-web'
+    DEPLOY_NAME = 'tensoropera-chat-web'
+
+    GIT_URL = 'https://github.com/TensorOpera-Inc/lobe-chat.git'
+    TAG_NAME = "SNAPSHOT-$BUILD_NUMBER"
+  }
+
+  stages {
+
+    stage('checkout for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      agent none
+      steps {
+        git(branch: env.BRANCH_PRODUCTION, url: env.GIT_URL, credentialsId: env.GITHUB_CREDENTIAL_ID, changelog: true, poll: false)
+      }
+    }
+
+    stage('docker build for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      steps {
+        container('base') {
+          sh 'podman build --network=host -f Dockerfile \
+          --build-arg OPENAI_API_KEY=$OPENAI_API_KEY \
+          --build-arg OPENAI_PROXY_URL=$OPENAI_PROXY_URL \
+          --build-arg NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY \
+          --build-arg CLERK_SECRET_KEY=$CLERK_SECRET_KEY \
+          --build-arg NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH \
+          -t $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION-SNAPSHOT-$BUILD_NUMBER .'
+        }
+      }
+    }
+
+    stage('push latest for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      steps {
+        container('base') {
+          withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_ID' ,usernameVariable : 'AWS_ECR_USERNAME' ,credentialsId : "$AWS_ECR_CREDENTIAL_ID_PRODUCTION" ,)]) {
+             withCredentials([usernamePassword(passwordVariable : 'AWS_IAM_ACCESS_KEY' ,usernameVariable : 'AWS_REGION' ,credentialsId : "$AWS_IAM_CREDENTIAL_ID_PRODUCTION" ,)]) {
+                sh 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"'
+                sh 'unzip awscliv2.zip'
+                sh './aws/install'
+                sh 'chmod a+x ./devops/set-aws-credentials.sh;./devops/set-aws-credentials.sh $AWS_IAM_ACCESS_ID $AWS_IAM_ACCESS_KEY $AWS_REGION'
+                sh 'podman login $REGISTRY_PRODUCTION -u $AWS_ECR_USERNAME -p $(/usr/local/bin/aws ecr get-login-password --region $AWS_REGION)'
+             }
+          }
+          sh 'podman tag  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION-SNAPSHOT-$BUILD_NUMBER $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION'
+          sh 'podman push  $REGISTRY_PRODUCTION/$DOCKER_NAMESPACE$APP_NAME:$VERSION_PRODUCTION'
+        }
+      }
+    }
+
+    stage('deploy for production') {
+      when {
+        branch env.BRANCH_PRODUCTION
+      }
+      steps {
+         container('base') {
+            withCredentials([
+                kubeconfigFile(
+                credentialsId: env.PRODUCTION_KUBECONFIG_CREDENTIAL_ID,
+                variable: 'KUBECONFIG')
+                ]) {
+                sh 'kubectl rollout restart -n $DEPLOY_NAMESPACE_PRODUCTION deployment/$DEPLOY_NAME'
+            }
+         }
+      }
+    }
+  }
+}
