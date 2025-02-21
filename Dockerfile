@@ -94,7 +94,9 @@ RUN \
 COPY . .
 
 # run build standalone for docker version
-RUN npm run build:docker
+RUN echo "root soft nofile 1048576" >> /etc/security/limits.conf \
+    && echo "root hard nofile 1048576" >> /etc/security/limits.conf \
+    && npm run build:docker
 
 ## Application image, copy all the files for production
 FROM busybox:latest AS app
